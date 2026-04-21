@@ -42,7 +42,7 @@ export class TypedArray<T extends TypedArrays> extends SizedType<T> {
     super.rangeCheck(dt.byteLength, options.byteOffset);
 
     const value = new this.arrayConstructor(
-      dt.buffer,
+      dt.buffer as ArrayBuffer,
       dt.byteOffset + options.byteOffset,
       this.length,
     ).slice() as T;
@@ -59,7 +59,7 @@ export class TypedArray<T extends TypedArrays> extends SizedType<T> {
     super.rangeCheck(dt.byteLength, options.byteOffset);
 
     const view = new this.arrayConstructor(
-      dt.buffer,
+      dt.buffer as ArrayBuffer,
       dt.byteOffset + options.byteOffset,
       this.length,
     );

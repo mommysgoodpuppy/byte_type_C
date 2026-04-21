@@ -8,7 +8,7 @@ const createRead = (key: string, method: string) =>
   `"${key}": ${key}.${method}(dt, options)`;
 
 const createWrite = (key: string, method: string) =>
-  `${key}.${method}(value.${key}, dt, options);`;
+  `${key}.${method}(inputValue.${key}, dt, options);`;
 
 function createFunc<V, M extends `read${string}`>(
   input: Record<string, SizedType<unknown>>,
@@ -30,7 +30,7 @@ function createFunc<V>(
   const keys = Object.keys(input);
 
   const mapFn = isWriter
-    ? (k: string) => `${k}.${method}(value.${k}, dt, { ...options, byteOffset: options.byteOffset + ${fieldOffsets[k]} });`
+    ? (k: string) => `${k}.${method}(inputValue.${k}, dt, { ...options, byteOffset: options.byteOffset + ${fieldOffsets[k]} });`
     : (k: string) => `"${k}": ${k}.${method}(dt, { ...options, byteOffset: options.byteOffset + ${fieldOffsets[k]} })`;
 
   const generatedCodec = keys.map(mapFn).join(separator);
@@ -41,7 +41,7 @@ function createFunc<V>(
     body += `return {${generatedCodec}}`;
   } else {
     body += `${generatedCodec}`;
-    args.push("value");
+    args.push("inputValue");
   }
 
   args.push(body);
@@ -96,7 +96,7 @@ export class SizedStruct<
     return this.#readPacked(dt, options);
   }
 
-  read(dt: DataView, options: Options = { byteOffset: 0 }): V {
+  override read(dt: DataView, options: Options = { byteOffset: 0 }): V {
     return this.#read(dt, options);
   }
 
@@ -108,7 +108,7 @@ export class SizedStruct<
     this.#writePacked(dt, options, value);
   }
 
-  write(value: V, dt: DataView, options: Options = { byteOffset: 0 }): void {
+  override write(value: V, dt: DataView, options: Options = { byteOffset: 0 }): void {
     this.#write(dt, options, value);
   }
 }
