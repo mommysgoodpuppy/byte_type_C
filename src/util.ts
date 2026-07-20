@@ -9,7 +9,9 @@ export const isLittleEndian: boolean = (() => {
   return new Uint16Array(buffer)[0] === 256;
 })();
 
-export function calculateStructSize(input: Record<string, SizedType<unknown>>): number {
+export function calculateStructSize(
+  input: Record<string, SizedType<unknown>>,
+): number {
   let currentOffset = 0;
   const structAlignment = getBiggestAlignment(input);
 
@@ -24,12 +26,29 @@ export function calculateStructSize(input: Record<string, SizedType<unknown>>): 
   return align(currentOffset, structAlignment);
 }
 
-export function calculateFieldOffsets(input: Record<string, SizedType<unknown>>): Record<string, number> {
+export function calculateFieldOffsets(
+  input: Record<string, SizedType<unknown>>,
+): Record<string, number> {
   let currentOffset = 0;
   const offsets: Record<string, number> = {};
 
   for (const [key, field] of Object.entries(input)) {
     currentOffset = align(currentOffset, field.byteAlignment);
+    offsets[key] = currentOffset;
+    currentOffset += field.byteSize;
+  }
+
+  return offsets;
+}
+
+/** Calculate field offsets without inserting alignment padding. */
+export function calculatePackedFieldOffsets(
+  input: Record<string, SizedType<unknown>>,
+): Record<string, number> {
+  let currentOffset = 0;
+  const offsets: Record<string, number> = {};
+
+  for (const [key, field] of Object.entries(input)) {
     offsets[key] = currentOffset;
     currentOffset += field.byteSize;
   }
