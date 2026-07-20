@@ -62,7 +62,7 @@ function createFunc<V>(
 
 export class SizedStruct<
   T extends Record<string, SizedType<unknown>>,
-  V extends { [K in keyof T]: InnerType<T[K]> } = {
+  V extends object = {
     [K in keyof T]: InnerType<T[K]>;
   },
 > extends SizedType<V> {
@@ -74,7 +74,7 @@ export class SizedStruct<
   #fields: T;
   #packedSize: number;
 
-  constructor(input: T) {
+  constructor(input: T, readonly defaults: Partial<V> = {}) {
     const structSize = calculateStructSize(input);
     const structAlignment = getBiggestAlignment(input);
     super(structSize, structAlignment);
@@ -146,4 +146,32 @@ export class SizedStruct<
     this.#write(dt, options, value);
     this.incrementOffset(options);
   }
+
+  /** Writes only supplied fields, leaving all other bytes unchanged. */
+  writePartial(
+    value: Partial<V>,
+    dt: DataView,
+    options: Options = { byteOffset: 0 },
+  ): void {
+    this.alignOffset(options);
+    this.rangeCheck(dt.byteLength, options.byteOffset);
+    for (const key of Object.keys(value) as Array<keyof T & keyof V>) {
+      const fieldValue = value[key];
+      if (fieldValue === undefined) continue;
+      this.#fields[key].write(
+        fieldValue,
+        dt,
+        { ...options, byteOffset: options.byteOffset + this.#fieldOffsets[key as string] },
+      );
+    }
+    this.incrementOffset(options);
+  }
+}
+
+/** Creates a struct codec whose public value type is an existing interface. */
+export function createSizedStruct<
+  V extends object,
+  T extends { [K in keyof V]: SizedType<any> } = { [K in keyof V]: SizedType<any> },
+>(input: T, defaults: Partial<V> = {}): SizedStruct<T, V> {
+  return new SizedStruct<T, V>(input, defaults);
 }
